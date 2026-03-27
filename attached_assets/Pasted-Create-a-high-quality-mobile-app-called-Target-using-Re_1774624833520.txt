@@ -1,0 +1,68 @@
+Create a high-quality mobile app called “Target+” using React Native + Expo.
+
+Goal:
+Build a polished study-support app for Target1900 that adds useful features on top of the official app.
+
+Important:
+- Make it mobile-first for iPhone and Android.
+- Also make sure the UI works well in web preview and nothing important is cut off.
+- Use safe area handling and scrollable layouts so content is never hidden.
+- Keep the UI clean, readable, modern, and easy to use.
+- Do not use user accounts or Supabase. All saved data must be stored locally on the device.
+- Design the app so future features can be added easily.
+
+App structure:
+Use bottom tabs with 4 tabs:
+1. Home
+2. Synonym Classification
+3. Meaning Search
+4. Derivative Words
+
+Home tab:
+- Show a large title at the top: “Welcome to Target+”
+- Under it, show this description:
+  “ターゲットの純正アプリにないちょこっと便利な機能を利用できます。”
+- Keep the home screen simple and inviting.
+
+Synonym Classification tab:
+- Let users manually register English words related to Target1900.
+- A registered word should be saved locally per device.
+- Show the saved words in a clean list or card layout.
+- When a word is added, use Perplexity AI to automatically show:
+  - the shared meaning
+  - the nuance differences between words
+  - if possible, tips to remember the distinction
+- Allow deleting saved words.
+- Prevent duplicate entries or show a clear warning if the same word already exists.
+
+Meaning Search tab:
+- Let users input an English word and search for its detailed meaning.
+- Explain meanings in clear Japanese.
+- Include nuance explanations, usage hints, and differences from similar words.
+- Organize results into readable sections such as Meaning, Nuance, Notes, and Memory Tips.
+- Keep the layout simple and easy to scan.
+
+Derivative Words tab:
+- This tab is currently under development.
+- When opened, show a large “開発中” heading on the screen.
+- Also show a short message like “現在この機能は準備中です。”
+- It should not do nothing when tapped; it must clearly open a development screen.
+
+Additional features:
+- It is okay to propose useful extras like favorites, recent searches, or copy buttons.
+- If you add any extra feature beyond the requested ones, make sure it is labeled as coming soon or under development if it is not fully ready.
+
+Design requirements:
+- Use a modern, simple, easy-to-read visual style.
+- Avoid cluttered layouts and tiny text.
+- Use clear spacing, strong hierarchy, and comfortable touch targets.
+- Add subtle animations or transitions only if they improve usability.
+- Make the app feel finished and polished, not like a rough prototype.
+
+Technical requirements:
+- Use local persistence for saved words and history.
+- Prepare the AI integration in a way that can later be wired to Perplexity AI API keys.
+- Structure the code cleanly and separate screens/components logically.
+- Use responsive layout rules so the app works in mobile preview and browser preview.
+
+Build the app with a complete, working initial version first. Prioritize the core flows over extra features.
