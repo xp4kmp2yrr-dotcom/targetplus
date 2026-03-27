@@ -1,16 +1,46 @@
+export type SynonymNuance = {
+  word: string;
+  formalLevel: string;
+  point: string;
+  scene: string;
+};
+
+export type SynonymExample = {
+  word: string;
+  example: string;
+  ja: string;
+};
+
 export type SynonymAnalysis = {
-  sharedMeaning: string;
-  nuances: Array<{ word: string; nuance: string }>;
-  memoryTips: string;
-  usageExamples: Array<{ word: string; example: string }>;
+  sharedImage: string;
+  nuances: SynonymNuance[];
+  memoryTip: string;
+  usageExamples: SynonymExample[];
+};
+
+export type WordMeaningEntry = {
+  pos: string;
+  ja: string;
+};
+
+export type VsWord = {
+  word: string;
+  diff: string;
+};
+
+export type WordExample = {
+  en: string;
+  ja: string;
 };
 
 export type WordMeaning = {
   word: string;
-  meaning: string;
-  nuance: string;
-  usageHints: string;
-  similarWords: string;
+  partOfSpeech: string;
+  coreImage: string;
+  meanings: WordMeaningEntry[];
+  usagePoints: string[];
+  vsWords: VsWord[];
+  examples: WordExample[];
   memoryTip: string;
 };
 

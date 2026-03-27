@@ -13,19 +13,28 @@ router.post("/ai/synonyms", async (req, res) => {
 
   const wordList = (words as string[]).map((w) => String(w).trim()).filter(Boolean);
 
-  const prompt = `以下の英単語グループを詳しく分析してください: ${wordList.join(", ")}
+  const prompt = `中高生向けに、次の英単語グループを分析してください: ${wordList.join(", ")}
 
-以下のJSON形式のみで回答してください（コードブロック・追加テキスト不要）:
+重要：各項目はできるだけ短く・箇条書き形式で。長い文章は避ける。
+
+以下のJSON形式のみで回答（コードブロック不要）:
 {
-  "sharedMeaning": "これらの単語の共通する意味（日本語、2〜3文）",
+  "sharedImage": "共通のひとことイメージ（15字以内）",
   "nuances": [
-    {"word": "単語1", "nuance": "この単語特有のニュアンス・使い方・よく使う場面（日本語）"},
-    {"word": "単語2", "nuance": "この単語特有のニュアンス・使い方・よく使う場面（日本語）"}
+    {
+      "word": "単語",
+      "formalLevel": "くだけた／ふつう／フォーマル",
+      "point": "特徴を1文で（20字以内）",
+      "scene": "よく使う場面（15字以内）"
+    }
   ],
-  "memoryTips": "単語を区別して覚えるための具体的なコツ（日本語）",
+  "memoryTip": "区別して覚えるコツ（30字以内・インパクト重視）",
   "usageExamples": [
-    {"word": "単語1", "example": "Natural English example sentence using this word."},
-    {"word": "単語2", "example": "Natural English example sentence using this word."}
+    {
+      "word": "単語",
+      "example": "Short example sentence.",
+      "ja": "日本語訳（15字以内）"
+    }
   ]
 }`;
 
@@ -34,7 +43,7 @@ router.post("/ai/synonyms", async (req, res) => {
       model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
-        maxOutputTokens: 8192,
+        maxOutputTokens: 4096,
         responseMimeType: "application/json",
       },
     });
@@ -65,16 +74,30 @@ router.post("/ai/meaning", async (req, res) => {
 
   const trimmedWord = word.trim();
 
-  const prompt = `英単語「${trimmedWord}」について詳しく解説してください。
+  const prompt = `中高生向けに、英単語「${trimmedWord}」を解説してください。
 
-以下のJSON形式のみで回答してください（コードブロック・追加テキスト不要）:
+重要：長い文章は避け、箇条書き・短文中心で。見やすさ最優先。
+
+以下のJSON形式のみで回答（コードブロック不要）:
 {
   "word": "${trimmedWord}",
-  "meaning": "主な意味・定義（日本語、2〜4文）",
-  "nuance": "ニュアンス・語感・フォーマル/カジュアルの使い分け（日本語）",
-  "usageHints": "よく使う場面・文脈・コロケーション（日本語）",
-  "similarWords": "類義語・近い単語との違い（日本語）",
-  "memoryTip": "この単語を覚えるための具体的なコツ・語源・イメージ（日本語）"
+  "partOfSpeech": "品詞（例：形容詞、動詞、名詞）",
+  "coreImage": "ひとことイメージ（10字以内）",
+  "meanings": [
+    {"pos": "品詞", "ja": "意味（15字以内）"},
+    {"pos": "品詞（別の意味がある場合）", "ja": "意味（15字以内）"}
+  ],
+  "usagePoints": [
+    "使い方のポイント1（20字以内）",
+    "使い方のポイント2（20字以内）"
+  ],
+  "vsWords": [
+    {"word": "類語", "diff": "違い（15字以内）"}
+  ],
+  "examples": [
+    {"en": "Short example sentence.", "ja": "日本語訳（15字以内）"}
+  ],
+  "memoryTip": "覚え方のコツ（25字以内・語源やイメージ活用）"
 }`;
 
   try {
@@ -82,7 +105,7 @@ router.post("/ai/meaning", async (req, res) => {
       model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
-        maxOutputTokens: 8192,
+        maxOutputTokens: 4096,
         responseMimeType: "application/json",
       },
     });

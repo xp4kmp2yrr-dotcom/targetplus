@@ -22,71 +22,122 @@ import {
   SearchHistoryItem,
 } from "@/services/storage";
 
-type ResultSectionProps = {
-  icon: string;
-  iconColor: string;
-  label: string;
-  content: string;
-  bgColor?: string;
-  borderColor?: string;
+const FORMAL_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
+  くだけた: { bg: "#FFF3CD", text: "#856404" },
+  ふつう: { bg: "#D1ECF1", text: "#0C5460" },
+  フォーマル: { bg: "#D4EDDA", text: "#155724" },
 };
 
-function ResultSection({
-  icon,
-  iconColor,
-  label,
-  content,
-  bgColor,
-  borderColor,
-}: ResultSectionProps) {
+function MeaningResultCard({ result }: { result: WordMeaning }) {
   return (
-    <View style={resultSectionStyles.section}>
-      <View style={resultSectionStyles.labelRow}>
-        <Feather name={icon as any} size={14} color={iconColor} />
-        <Text style={resultSectionStyles.label}>{label}</Text>
+    <View style={styles.resultCard}>
+      {/* Word + pos + core image */}
+      <View style={styles.wordHeader}>
+        <View style={styles.wordHeaderLeft}>
+          <Text style={styles.wordText}>{result.word}</Text>
+          {result.partOfSpeech ? (
+            <View style={styles.posBadge}>
+              <Text style={styles.posText}>{result.partOfSpeech}</Text>
+            </View>
+          ) : null}
+        </View>
+        {result.coreImage ? (
+          <View style={styles.coreImageBox}>
+            <Text style={styles.coreImageEmoji}>💡</Text>
+            <Text style={styles.coreImageText}>{result.coreImage}</Text>
+          </View>
+        ) : null}
       </View>
-      <View
-        style={[
-          resultSectionStyles.contentBox,
-          bgColor ? { backgroundColor: bgColor } : {},
-          borderColor ? { borderLeftWidth: 3, borderLeftColor: borderColor } : {},
-        ]}
-      >
-        <Text style={resultSectionStyles.content}>{content}</Text>
-      </View>
+
+      {/* Meanings */}
+      {result.meanings?.length > 0 && (
+        <View style={styles.block}>
+          <View style={styles.blockLabelRow}>
+            <Text style={styles.blockIcon}>📖</Text>
+            <Text style={styles.blockLabel}>意味</Text>
+          </View>
+          <View style={styles.meaningsTable}>
+            {result.meanings.map((m, i) => (
+              <View key={i} style={[styles.meaningRow, i > 0 && styles.meaningRowBorder]}>
+                <View style={styles.meaningPosCell}>
+                  <Text style={styles.meaningPos}>{m.pos}</Text>
+                </View>
+                <Text style={styles.meaningJa}>{m.ja}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Usage Points */}
+      {result.usagePoints?.length > 0 && (
+        <View style={styles.block}>
+          <View style={styles.blockLabelRow}>
+            <Text style={styles.blockIcon}>✅</Text>
+            <Text style={styles.blockLabel}>使い方のポイント</Text>
+          </View>
+          <View style={styles.pointsList}>
+            {result.usagePoints.map((pt, i) => (
+              <View key={i} style={styles.pointRow}>
+                <Text style={styles.pointBullet}>·</Text>
+                <Text style={styles.pointText}>{pt}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Examples */}
+      {result.examples?.length > 0 && (
+        <View style={styles.block}>
+          <View style={styles.blockLabelRow}>
+            <Text style={styles.blockIcon}>✏️</Text>
+            <Text style={styles.blockLabel}>例文</Text>
+          </View>
+          <View style={styles.examplesBox}>
+            {result.examples.map((ex, i) => (
+              <View key={i} style={[styles.exampleItem, i > 0 && { marginTop: 10 }]}>
+                <Text style={styles.exampleEn}>{ex.en}</Text>
+                <Text style={styles.exampleJa}>{ex.ja}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* vs Words */}
+      {result.vsWords?.length > 0 && (
+        <View style={styles.block}>
+          <View style={styles.blockLabelRow}>
+            <Text style={styles.blockIcon}>⚖️</Text>
+            <Text style={styles.blockLabel}>類語との違い</Text>
+          </View>
+          <View style={styles.vsTable}>
+            {result.vsWords.map((v, i) => (
+              <View key={i} style={[styles.vsRow, i > 0 && styles.vsRowBorder]}>
+                <View style={styles.vsWordCell}>
+                  <Text style={styles.vsWord}>{v.word}</Text>
+                </View>
+                <Text style={styles.vsDiff}>{v.diff}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Memory Tip */}
+      {result.memoryTip ? (
+        <View style={styles.memoryBox}>
+          <Text style={styles.memoryIcon}>🧠</Text>
+          <View style={styles.memoryContent}>
+            <Text style={styles.memoryLabel}>覚え方</Text>
+            <Text style={styles.memoryText}>{result.memoryTip}</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
-
-const resultSectionStyles = StyleSheet.create({
-  section: {
-    marginBottom: 20,
-  },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  contentBox: {
-    backgroundColor: Colors.light.backgroundTertiary,
-    borderRadius: 10,
-    padding: 14,
-  },
-  content: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.text,
-    lineHeight: 22,
-  },
-});
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -123,8 +174,8 @@ export default function SearchScreen() {
       await addToSearchHistory(searchWord);
       setHistory(await getSearchHistory());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      Alert.alert("エラー", "検索中にエラーが発生しました。しばらく後にもう一度お試しください。");
+    } catch {
+      Alert.alert("エラー", "検索中にエラーが発生しました。もう一度お試しください。");
     } finally {
       setIsSearching(false);
     }
@@ -144,7 +195,7 @@ export default function SearchScreen() {
           <Text style={styles.headerTitle}>意味検索</Text>
           <View style={styles.aiBadge}>
             <Feather name="zap" size={12} color={Colors.light.tint} />
-            <Text style={styles.aiBadgeText}>Gemini AI</Text>
+            <Text style={styles.aiBadgeText}>AI</Text>
           </View>
         </View>
         <Text style={styles.headerSub}>英単語の意味・ニュアンスを日本語で調べる</Text>
@@ -178,7 +229,7 @@ export default function SearchScreen() {
           </Pressable>
         </View>
         {isSearching && (
-          <Text style={styles.searchingText}>Gemini AIが解析中...</Text>
+          <Text style={styles.searchingText}>AI解析中...</Text>
         )}
       </View>
 
@@ -190,59 +241,7 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Search Result */}
-        {result && (
-          <View style={styles.resultCard}>
-            <View style={styles.resultWordHeader}>
-              <Text style={styles.resultWord}>{result.word}</Text>
-              <View style={styles.resultBadge}>
-                <Feather name="zap" size={11} color={Colors.light.tint} />
-                <Text style={styles.resultBadgeText}>AI解析</Text>
-              </View>
-            </View>
-
-            <ResultSection
-              icon="book-open"
-              iconColor={Colors.light.navy}
-              label="意味"
-              content={result.meaning}
-              bgColor={Colors.light.navy + "0C"}
-              borderColor={Colors.light.navy}
-            />
-            <ResultSection
-              icon="layers"
-              iconColor={Colors.light.accent}
-              label="ニュアンス"
-              content={result.nuance}
-              bgColor={Colors.light.accent + "0F"}
-              borderColor={Colors.light.accent}
-            />
-            <ResultSection
-              icon="map"
-              iconColor="#2D9A6C"
-              label="使い方のヒント"
-              content={result.usageHints}
-              bgColor="#2D9A6C0D"
-              borderColor="#2D9A6C"
-            />
-            <ResultSection
-              icon="git-branch"
-              iconColor="#8B5CF6"
-              label="類語との違い"
-              content={result.similarWords}
-              bgColor="#8B5CF60D"
-              borderColor="#8B5CF6"
-            />
-            <ResultSection
-              icon="zap"
-              iconColor="#F0A500"
-              label="覚え方のコツ"
-              content={result.memoryTip}
-              bgColor="#FFF8E7"
-              borderColor="#F0A500"
-            />
-          </View>
-        )}
+        {result && <MeaningResultCard result={result} />}
 
         {/* Search History */}
         {!result && history.length > 0 && (
@@ -274,7 +273,6 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {/* Empty state */}
         {!result && history.length === 0 && !isSearching && (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
@@ -292,10 +290,7 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.light.background },
   header: {
     backgroundColor: Colors.light.backgroundSecondary,
     paddingHorizontal: 20,
@@ -341,10 +336,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.tint,
   },
-  inputRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  inputRow: { flexDirection: "row", gap: 10 },
   input: {
     flex: 1,
     height: 50,
@@ -370,81 +362,166 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  searchBtnDisabled: {
-    backgroundColor: Colors.light.textTertiary,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  searchingText: {
-    marginTop: 8,
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.tint,
-  },
-  scrollContent: {
-    padding: 16,
-  },
+  searchBtnDisabled: { backgroundColor: Colors.light.textTertiary, shadowOpacity: 0, elevation: 0 },
+  searchingText: { marginTop: 8, fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.tint },
+  scrollContent: { padding: 16 },
+
+  /* Result Card */
   resultCard: {
     backgroundColor: Colors.light.card,
     borderRadius: 18,
-    padding: 20,
     borderWidth: 1,
     borderColor: Colors.light.cardBorder,
+    overflow: "hidden",
     shadowColor: Colors.light.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 16,
     elevation: 4,
+    marginBottom: 16,
   },
-  resultWordHeader: {
+  wordHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    backgroundColor: Colors.light.navy,
   },
-  resultWord: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.navy,
+  wordHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  wordText: { fontSize: 26, fontFamily: "Inter_700Bold", color: "#fff" },
+  posBadge: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  resultBadge: {
+  posText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.9)" },
+  coreImageBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: Colors.light.tint + "18",
+    backgroundColor: "rgba(255,255,255,0.15)",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 10,
+    maxWidth: 140,
   },
-  resultBadgeText: {
+  coreImageEmoji: { fontSize: 14 },
+  coreImageText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFE066", flexShrink: 1 },
+
+  block: { paddingHorizontal: 16, paddingTop: 14 },
+  blockLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  blockIcon: { fontSize: 14 },
+  blockLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+
+  /* Meanings table */
+  meaningsTable: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    overflow: "hidden",
+  },
+  meaningRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.light.backgroundTertiary,
+  },
+  meaningRowBorder: { borderTopWidth: 1, borderTopColor: Colors.light.border },
+  meaningPosCell: {
+    width: 90,
+    marginRight: 10,
+  },
+  meaningPos: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.tint,
+    backgroundColor: Colors.light.tint + "18",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    alignSelf: "flex-start",
   },
-  historySection: {
-    marginTop: 8,
+  meaningJa: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.text,
   },
-  historySectionHeader: {
+
+  /* Usage Points */
+  pointsList: { gap: 6 },
+  pointRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  pointBullet: { fontSize: 18, color: Colors.light.tint, lineHeight: 22, marginTop: -1 },
+  pointText: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.light.text, lineHeight: 21 },
+
+  /* Examples */
+  examplesBox: {
+    backgroundColor: "#F0F7FF",
+    borderRadius: 10,
+    padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.light.accent,
+  },
+  exampleItem: {},
+  exampleEn: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.light.navy, fontStyle: "italic" },
+  exampleJa: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginTop: 2 },
+
+  /* vs Words table */
+  vsTable: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    overflow: "hidden",
+  },
+  vsRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.light.backgroundTertiary,
   },
-  historySectionTitle: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.textSecondary,
-  },
-  clearText: {
+  vsRowBorder: { borderTopWidth: 1, borderTopColor: Colors.light.border },
+  vsWordCell: { width: 90, marginRight: 10 },
+  vsWord: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.tint,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.accent,
   },
-  historyChips: {
+  vsDiff: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.text },
+
+  /* Memory Tip */
+  memoryBox: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    alignItems: "flex-start",
+    gap: 10,
+    margin: 16,
+    marginTop: 14,
+    backgroundColor: "#FFF8E1",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#FFD54F",
   },
+  memoryIcon: { fontSize: 22, lineHeight: 26 },
+  memoryContent: { flex: 1 },
+  memoryLabel: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#856404", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 },
+  memoryText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#5D4037", lineHeight: 21 },
+
+  /* History */
+  historySection: { marginTop: 8 },
+  historySectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  historySectionTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.light.textSecondary },
+  clearText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.tint },
+  historyChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   historyChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -456,16 +533,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
-  historyChipText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.text,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingTop: 60,
-    gap: 12,
-  },
+  historyChipText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.text },
+
+  /* Empty */
+  emptyState: { alignItems: "center", paddingTop: 60, gap: 12 },
   emptyIconWrap: {
     width: 80,
     height: 80,
@@ -475,11 +546,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.textSecondary,
-  },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: Colors.light.textSecondary },
   emptyDesc: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",

@@ -26,6 +26,13 @@ function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 }
 
+const LEVEL_COLOR: Record<string, { bg: string; text: string; border: string }> = {
+  くだけた: { bg: "#FFF3CD", text: "#7A5200", border: "#FFD95A" },
+  ふつう: { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
+  フォーマル: { bg: "#E8F5E9", text: "#1B5E20", border: "#A5D6A7" },
+};
+const DEFAULT_LEVEL = { bg: Colors.light.backgroundTertiary, text: Colors.light.textSecondary, border: Colors.light.border };
+
 type AnalysisCardProps = {
   group: SynonymGroup;
   onDelete: (id: string) => void;
@@ -33,6 +40,7 @@ type AnalysisCardProps = {
 
 function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const analysis = group.analysis;
 
   const handleDelete = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -52,8 +60,6 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
       ]
     );
   };
-
-  const analysis = group.analysis;
 
   return (
     <View style={styles.card}>
@@ -92,57 +98,86 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
         <View style={styles.cardBody}>
           <View style={styles.divider} />
 
-          {/* Shared Meaning */}
-          <View style={styles.section}>
-            <View style={styles.sectionLabelRow}>
-              <Feather name="link" size={14} color={Colors.light.accent} />
-              <Text style={styles.sectionLabel}>共通の意味</Text>
+          {/* Shared Image */}
+          {analysis.sharedImage ? (
+            <View style={styles.sharedImageBox}>
+              <Text style={styles.sharedImageIcon}>🔗</Text>
+              <Text style={styles.sharedImageLabel}>共通イメージ</Text>
+              <Text style={styles.sharedImageText}>{analysis.sharedImage}</Text>
             </View>
-            <Text style={styles.sectionText}>{analysis.sharedMeaning}</Text>
-          </View>
+          ) : null}
 
-          {/* Nuances */}
-          <View style={styles.section}>
-            <View style={styles.sectionLabelRow}>
-              <Feather name="layers" size={14} color={Colors.light.tint} />
-              <Text style={styles.sectionLabel}>ニュアンスの違い</Text>
-            </View>
-            {analysis.nuances.map((n) => (
-              <View key={n.word} style={styles.nuanceRow}>
-                <View style={styles.nuanceWordBadge}>
-                  <Text style={styles.nuanceWordText}>{n.word}</Text>
-                </View>
-                <Text style={styles.nuanceText}>{n.nuance}</Text>
+          {/* Nuances Table */}
+          {analysis.nuances?.length > 0 && (
+            <View style={styles.block}>
+              <View style={styles.blockLabelRow}>
+                <Text style={styles.blockIcon}>⚖️</Text>
+                <Text style={styles.blockLabel}>ニュアンスの違い</Text>
               </View>
-            ))}
-          </View>
-
-          {/* Memory Tips */}
-          <View style={styles.section}>
-            <View style={styles.sectionLabelRow}>
-              <Feather name="zap" size={14} color="#F0A500" />
-              <Text style={styles.sectionLabel}>覚え方のコツ</Text>
-            </View>
-            <View style={styles.tipBox}>
-              <Text style={styles.sectionText}>{analysis.memoryTips}</Text>
-            </View>
-          </View>
-
-          {/* Examples */}
-          {analysis.usageExamples && analysis.usageExamples.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionLabelRow}>
-                <Feather name="edit-3" size={14} color={Colors.light.accent} />
-                <Text style={styles.sectionLabel}>例文</Text>
+              <View style={styles.nuanceTable}>
+                {analysis.nuances.map((n, i) => {
+                  const lvl = LEVEL_COLOR[n.formalLevel] ?? DEFAULT_LEVEL;
+                  return (
+                    <View key={n.word} style={[styles.nuanceRow, i > 0 && styles.nuanceRowBorder]}>
+                      {/* Word + level */}
+                      <View style={styles.nuanceLeft}>
+                        <Text style={styles.nuanceWord}>{n.word}</Text>
+                        <View style={[styles.levelBadge, { backgroundColor: lvl.bg, borderColor: lvl.border }]}>
+                          <Text style={[styles.levelText, { color: lvl.text }]}>{n.formalLevel}</Text>
+                        </View>
+                      </View>
+                      {/* Point + scene */}
+                      <View style={styles.nuanceRight}>
+                        <Text style={styles.nuancePoint}>{n.point}</Text>
+                        {n.scene ? (
+                          <View style={styles.sceneRow}>
+                            <Feather name="map-pin" size={10} color={Colors.light.textTertiary} />
+                            <Text style={styles.sceneText}>{n.scene}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
-              {analysis.usageExamples.map((ex) => (
-                <View key={ex.word} style={styles.exampleRow}>
-                  <Text style={styles.exampleWord}>{ex.word}:</Text>
-                  <Text style={styles.exampleSentence}>{ex.example}</Text>
-                </View>
-              ))}
             </View>
           )}
+
+          {/* Memory Tip */}
+          {analysis.memoryTip ? (
+            <View style={[styles.block, { paddingTop: 12 }]}>
+              <View style={styles.memoryBox}>
+                <Text style={styles.memoryIcon}>🧠</Text>
+                <View style={styles.memoryContent}>
+                  <Text style={styles.memoryLabel}>覚え方のコツ</Text>
+                  <Text style={styles.memoryText}>{analysis.memoryTip}</Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Examples */}
+          {analysis.usageExamples?.length > 0 && (
+            <View style={[styles.block, { paddingTop: 12 }]}>
+              <View style={styles.blockLabelRow}>
+                <Text style={styles.blockIcon}>✏️</Text>
+                <Text style={styles.blockLabel}>例文</Text>
+              </View>
+              <View style={styles.examplesBox}>
+                {analysis.usageExamples.map((ex, i) => (
+                  <View key={ex.word} style={[styles.exampleItem, i > 0 && { marginTop: 10 }]}>
+                    <View style={styles.exampleWordBadge}>
+                      <Text style={styles.exampleWordText}>{ex.word}</Text>
+                    </View>
+                    <Text style={styles.exampleEn}>{ex.example}</Text>
+                    {ex.ja ? <Text style={styles.exampleJa}>{ex.ja}</Text> : null}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={{ height: 4 }} />
         </View>
       )}
     </View>
@@ -180,14 +215,10 @@ export default function SynonymScreen() {
     );
 
     if (words.length < 2) {
-      Alert.alert(
-        "入力エラー",
-        "2つ以上の単語をカンマや空白で区切って入力してください。"
-      );
+      Alert.alert("入力エラー", "2つ以上の単語をカンマや空白で区切って入力してください。");
       return;
     }
 
-    // Duplicate check
     const sortedNew = [...words].sort().join(",").toLowerCase();
     const isDuplicate = groups.some(
       (g) => [...g.words].sort().join(",").toLowerCase() === sortedNew
@@ -212,8 +243,8 @@ export default function SynonymScreen() {
       await saveSynonymGroup(newGroup);
       setGroups((prev) => [newGroup, ...prev]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      Alert.alert("エラー", "AI分析中にエラーが発生しました。しばらく後にもう一度お試しください。");
+    } catch {
+      Alert.alert("エラー", "AI分析中にエラーが発生しました。もう一度お試しください。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -226,20 +257,15 @@ export default function SynonymScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
         <View style={styles.headerTop}>
           <Text style={styles.headerTitle}>類義語分類</Text>
           <View style={styles.aiBadge}>
             <Feather name="zap" size={12} color={Colors.light.tint} />
-            <Text style={styles.aiBadgeText}>Gemini AI</Text>
+            <Text style={styles.aiBadgeText}>AI</Text>
           </View>
         </View>
-        <Text style={styles.headerSub}>
-          英単語をカンマ区切りで入力してAI分析
-        </Text>
-
-        {/* Input Row */}
+        <Text style={styles.headerSub}>英単語をカンマ区切りで入力してAI分析</Text>
         <View style={styles.inputRow}>
           <TextInput
             ref={inputRef}
@@ -269,15 +295,11 @@ export default function SynonymScreen() {
             )}
           </Pressable>
         </View>
-
         {isAnalyzing && (
-          <Text style={styles.analyzingText}>
-            Gemini AIが分析中...
-          </Text>
+          <Text style={styles.analyzingText}>AI分析中...</Text>
         )}
       </View>
 
-      {/* List */}
       <FlatList
         data={groups}
         keyExtractor={(item) => item.id}
@@ -305,10 +327,7 @@ export default function SynonymScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.light.background },
   header: {
     backgroundColor: Colors.light.backgroundSecondary,
     paddingHorizontal: 20,
@@ -321,23 +340,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.navy,
-  },
-  headerSub: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textSecondary,
-    marginBottom: 14,
-  },
+  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.light.navy },
+  headerSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginBottom: 14 },
   aiBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,15 +354,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.tint + "30",
   },
-  aiBadgeText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.tint,
-  },
-  inputRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  aiBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.light.tint },
+  inputRow: { flexDirection: "row", gap: 10 },
   input: {
     flex: 1,
     height: 50,
@@ -383,43 +381,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  addBtnDisabled: {
-    backgroundColor: Colors.light.textTertiary,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  analyzingText: {
-    marginTop: 8,
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.tint,
-  },
-  list: {
-    padding: 16,
-    gap: 12,
-  },
-  listEmpty: {
-    flex: 1,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.textSecondary,
-  },
-  emptyDesc: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textTertiary,
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  addBtnDisabled: { backgroundColor: Colors.light.textTertiary, shadowOpacity: 0, elevation: 0 },
+  analyzingText: { marginTop: 8, fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.tint },
+
+  list: { padding: 16, gap: 12 },
+  listEmpty: { flex: 1 },
+  emptyState: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 12 },
+  emptyTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: Colors.light.textSecondary },
+  emptyDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textTertiary, textAlign: "center", lineHeight: 20 },
+
+  /* Card */
   card: {
     backgroundColor: Colors.light.card,
     borderRadius: 16,
@@ -433,120 +404,104 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 4,
   },
-  cardHeader: {
+  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16 },
+  cardHeaderLeft: { flex: 1, gap: 6 },
+  cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 12 },
+  wordsChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  wordChip: { backgroundColor: Colors.light.tint + "18", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  wordChipText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.light.tint },
+  cardDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textTertiary },
+  deleteBtn: { padding: 4 },
+  cardBody: { paddingHorizontal: 14, paddingBottom: 4 },
+  divider: { height: 1, backgroundColor: Colors.light.border, marginBottom: 14 },
+
+  /* Shared Image */
+  sharedImageBox: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
+    gap: 8,
+    backgroundColor: Colors.light.navy + "0C",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.light.navy,
+    marginBottom: 14,
   },
-  cardHeaderLeft: {
-    flex: 1,
-    gap: 6,
-  },
-  cardHeaderRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  wordsChipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  wordChip: {
-    backgroundColor: Colors.light.tint + "18",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  wordChipText: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.tint,
-  },
-  cardDate: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textTertiary,
-  },
-  deleteBtn: {
-    padding: 4,
-  },
-  cardBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.light.border,
-    marginBottom: 16,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  sectionText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.text,
-    lineHeight: 22,
+  sharedImageIcon: { fontSize: 16 },
+  sharedImageLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.light.navy, marginRight: 2 },
+  sharedImageText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.light.navy },
+
+  block: { paddingTop: 0, marginBottom: 14 },
+  blockLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  blockIcon: { fontSize: 14 },
+  blockLabel: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.light.textSecondary, textTransform: "uppercase", letterSpacing: 0.6 },
+
+  /* Nuance Table */
+  nuanceTable: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    overflow: "hidden",
   },
   nuanceRow: {
-    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.light.backgroundTertiary,
   },
-  nuanceWordBadge: {
+  nuanceRowBorder: { borderTopWidth: 1, borderTopColor: Colors.light.border },
+  nuanceLeft: { width: 100, gap: 5, marginRight: 10 },
+  nuanceWord: { fontSize: 14, fontFamily: "Inter_700Bold", color: Colors.light.tint },
+  levelBadge: {
     alignSelf: "flex-start",
-    backgroundColor: Colors.light.tint + "18",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 4,
+    borderRadius: 5,
+    borderWidth: 1,
   },
-  nuanceWordText: {
-    fontSize: 12,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.tint,
+  levelText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  nuanceRight: { flex: 1, gap: 4 },
+  nuancePoint: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.text, lineHeight: 19 },
+  sceneRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  sceneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textTertiary },
+
+  /* Memory */
+  memoryBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: "#FFF8E1",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FFD54F",
   },
-  nuanceText: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.text,
-    lineHeight: 20,
-    paddingLeft: 4,
-  },
-  tipBox: {
-    backgroundColor: "#FFF8E7",
+  memoryIcon: { fontSize: 20, lineHeight: 24 },
+  memoryContent: { flex: 1 },
+  memoryLabel: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#856404", marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 },
+  memoryText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#5D4037", lineHeight: 20 },
+
+  /* Examples */
+  examplesBox: {
+    backgroundColor: "#F0F7FF",
     borderRadius: 10,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: "#F0A500",
+    borderLeftColor: Colors.light.accent,
+    gap: 10,
   },
-  exampleRow: {
-    marginBottom: 8,
+  exampleItem: {},
+  exampleWordBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: Colors.light.accent + "20",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 5,
+    marginBottom: 4,
   },
-  exampleWord: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.accent,
-    marginBottom: 2,
-  },
-  exampleSentence: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.text,
-    lineHeight: 20,
-    fontStyle: "italic",
-  },
+  exampleWordText: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.light.accent },
+  exampleEn: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.light.navy, fontStyle: "italic" },
+  exampleJa: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginTop: 2 },
 });
