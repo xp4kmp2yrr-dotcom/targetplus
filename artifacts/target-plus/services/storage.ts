@@ -15,7 +15,6 @@ export type SearchHistoryItem = {
 
 const SYNONYM_GROUPS_KEY = "@targetplus_synonym_groups";
 const SEARCH_HISTORY_KEY = "@targetplus_search_history";
-const API_KEY_KEY = "@targetplus_api_key";
 
 export async function getSynonymGroups(): Promise<SynonymGroup[]> {
   try {
@@ -58,16 +57,4 @@ export async function addToSearchHistory(word: string): Promise<void> {
 
 export async function clearSearchHistory(): Promise<void> {
   await AsyncStorage.removeItem(SEARCH_HISTORY_KEY);
-}
-
-export async function getApiKey(): Promise<string> {
-  try {
-    return (await AsyncStorage.getItem(API_KEY_KEY)) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-export async function saveApiKey(key: string): Promise<void> {
-  await AsyncStorage.setItem(API_KEY_KEY, key);
 }

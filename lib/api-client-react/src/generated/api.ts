@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  HealthStatus,
+  SynonymAnalysisRequest,
+  SynonymAnalysisResult,
+  WordMeaningRequest,
+  WordMeaningResult,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +109,177 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Analyzes a group of words and returns shared meaning, nuances, and memory tips
+ * @summary Analyze synonym group
+ */
+export const getAnalyzeSynonymsUrl = () => {
+  return `/api/ai/synonyms`;
+};
+
+export const analyzeSynonyms = async (
+  synonymAnalysisRequest: SynonymAnalysisRequest,
+  options?: RequestInit,
+): Promise<SynonymAnalysisResult> => {
+  return customFetch<SynonymAnalysisResult>(getAnalyzeSynonymsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(synonymAnalysisRequest),
+  });
+};
+
+export const getAnalyzeSynonymsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeSynonyms>>,
+    TError,
+    { data: BodyType<SynonymAnalysisRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeSynonyms>>,
+  TError,
+  { data: BodyType<SynonymAnalysisRequest> },
+  TContext
+> => {
+  const mutationKey = ["analyzeSynonyms"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeSynonyms>>,
+    { data: BodyType<SynonymAnalysisRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return analyzeSynonyms(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeSynonymsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeSynonyms>>
+>;
+export type AnalyzeSynonymsMutationBody = BodyType<SynonymAnalysisRequest>;
+export type AnalyzeSynonymsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Analyze synonym group
+ */
+export const useAnalyzeSynonyms = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeSynonyms>>,
+    TError,
+    { data: BodyType<SynonymAnalysisRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeSynonyms>>,
+  TError,
+  { data: BodyType<SynonymAnalysisRequest> },
+  TContext
+> => {
+  return useMutation(getAnalyzeSynonymsMutationOptions(options));
+};
+
+/**
+ * Returns detailed meaning, nuance, and usage tips for an English word in Japanese
+ * @summary Search word meaning
+ */
+export const getSearchWordMeaningUrl = () => {
+  return `/api/ai/meaning`;
+};
+
+export const searchWordMeaning = async (
+  wordMeaningRequest: WordMeaningRequest,
+  options?: RequestInit,
+): Promise<WordMeaningResult> => {
+  return customFetch<WordMeaningResult>(getSearchWordMeaningUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(wordMeaningRequest),
+  });
+};
+
+export const getSearchWordMeaningMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof searchWordMeaning>>,
+    TError,
+    { data: BodyType<WordMeaningRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof searchWordMeaning>>,
+  TError,
+  { data: BodyType<WordMeaningRequest> },
+  TContext
+> => {
+  const mutationKey = ["searchWordMeaning"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof searchWordMeaning>>,
+    { data: BodyType<WordMeaningRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return searchWordMeaning(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SearchWordMeaningMutationResult = NonNullable<
+  Awaited<ReturnType<typeof searchWordMeaning>>
+>;
+export type SearchWordMeaningMutationBody = BodyType<WordMeaningRequest>;
+export type SearchWordMeaningMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Search word meaning
+ */
+export const useSearchWordMeaning = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof searchWordMeaning>>,
+    TError,
+    { data: BodyType<WordMeaningRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof searchWordMeaning>>,
+  TError,
+  { data: BodyType<WordMeaningRequest> },
+  TContext
+> => {
+  return useMutation(getSearchWordMeaningMutationOptions(options));
+};

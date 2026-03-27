@@ -14,3 +14,47 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Analyzes a group of words and returns shared meaning, nuances, and memory tips
+ * @summary Analyze synonym group
+ */
+export const analyzeSynonymsBodyWordsMin = 2;
+
+export const AnalyzeSynonymsBody = zod.object({
+  words: zod.array(zod.string()).min(analyzeSynonymsBodyWordsMin),
+});
+
+export const AnalyzeSynonymsResponse = zod.object({
+  sharedMeaning: zod.string(),
+  nuances: zod.array(
+    zod.object({
+      word: zod.string(),
+      nuance: zod.string(),
+    }),
+  ),
+  memoryTips: zod.string(),
+  usageExamples: zod.array(
+    zod.object({
+      word: zod.string(),
+      example: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * Returns detailed meaning, nuance, and usage tips for an English word in Japanese
+ * @summary Search word meaning
+ */
+export const SearchWordMeaningBody = zod.object({
+  word: zod.string(),
+});
+
+export const SearchWordMeaningResponse = zod.object({
+  word: zod.string(),
+  meaning: zod.string(),
+  nuance: zod.string(),
+  usageHints: zod.string(),
+  similarWords: zod.string(),
+  memoryTip: zod.string(),
+});

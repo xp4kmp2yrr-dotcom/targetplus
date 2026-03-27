@@ -5,7 +5,6 @@ import {
   FlatList,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,7 +17,6 @@ import Colors from "@/constants/colors";
 import { analyzeSynonyms, SynonymAnalysis } from "@/services/ai";
 import {
   deleteSynonymGroup,
-  getApiKey,
   getSynonymGroups,
   saveSynonymGroup,
   SynonymGroup,
@@ -160,18 +158,11 @@ export default function SynonymScreen() {
   const [groups, setGroups] = useState<SynonymGroup[]>([]);
   const [inputText, setInputText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [apiKeyDraft, setApiKeyDraft] = useState("");
   const inputRef = useRef<TextInput>(null);
 
   const loadData = useCallback(async () => {
-    const [savedGroups, savedKey] = await Promise.all([
-      getSynonymGroups(),
-      getApiKey(),
-    ]);
+    const savedGroups = await getSynonymGroups();
     setGroups(savedGroups);
-    setApiKey(savedKey);
   }, []);
 
   useEffect(() => {
@@ -211,7 +202,7 @@ export default function SynonymScreen() {
     setIsAnalyzing(true);
 
     try {
-      const analysis = await analyzeSynonyms(words, apiKey || undefined);
+      const analysis = await analyzeSynonyms(words);
       const newGroup: SynonymGroup = {
         id: generateId(),
         words,
@@ -222,7 +213,7 @@ export default function SynonymScreen() {
       setGroups((prev) => [newGroup, ...prev]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      Alert.alert("エラー", "分析中にエラーが発生しました。");
+      Alert.alert("エラー", "AI分析中にエラーが発生しました。しばらく後にもう一度お試しください。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -233,70 +224,20 @@ export default function SynonymScreen() {
     setGroups((prev) => prev.filter((g) => g.id !== id));
   };
 
-  const handleSaveApiKey = async () => {
-    const { saveApiKey } = await import("@/services/storage");
-    await saveApiKey(apiKeyDraft.trim());
-    setApiKey(apiKeyDraft.trim());
-    setShowApiKeyInput(false);
-    setApiKeyDraft("");
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("保存完了", "APIキーを保存しました。");
-  };
-
   return (
-    <View style={[styles.container]}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
         <View style={styles.headerTop}>
           <Text style={styles.headerTitle}>類義語分類</Text>
-          <Pressable
-            onPress={() => {
-              setShowApiKeyInput((s) => !s);
-              setApiKeyDraft(apiKey);
-            }}
-            style={[styles.apiKeyBtn, apiKey ? styles.apiKeyBtnActive : {}]}
-            hitSlop={8}
-          >
-            <Feather
-              name="key"
-              size={15}
-              color={apiKey ? Colors.light.tint : Colors.light.textTertiary}
-            />
-            <Text
-              style={[
-                styles.apiKeyBtnText,
-                apiKey ? { color: Colors.light.tint } : {},
-              ]}
-            >
-              {apiKey ? "APIキー設定済" : "APIキー設定"}
-            </Text>
-          </Pressable>
+          <View style={styles.aiBadge}>
+            <Feather name="zap" size={12} color={Colors.light.tint} />
+            <Text style={styles.aiBadgeText}>Gemini AI</Text>
+          </View>
         </View>
         <Text style={styles.headerSub}>
           英単語をカンマ区切りで入力してAI分析
         </Text>
-
-        {/* API Key Input */}
-        {showApiKeyInput && (
-          <View style={styles.apiKeySection}>
-            <TextInput
-              style={styles.apiKeyInput}
-              value={apiKeyDraft}
-              onChangeText={setApiKeyDraft}
-              placeholder="Perplexity APIキーを入力..."
-              placeholderTextColor={Colors.light.textTertiary}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Pressable
-              onPress={handleSaveApiKey}
-              style={styles.apiKeySaveBtn}
-            >
-              <Text style={styles.apiKeySaveBtnText}>保存</Text>
-            </Pressable>
-          </View>
-        )}
 
         {/* Input Row */}
         <View style={styles.inputRow}>
@@ -330,7 +271,9 @@ export default function SynonymScreen() {
         </View>
 
         {isAnalyzing && (
-          <Text style={styles.analyzingText}>AIが分析中...</Text>
+          <Text style={styles.analyzingText}>
+            Gemini AIが分析中...
+          </Text>
         )}
       </View>
 
@@ -395,54 +338,21 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginBottom: 14,
   },
-  apiKeyBtn: {
+  aiBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: Colors.light.backgroundTertiary,
+    backgroundColor: Colors.light.tint + "18",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.tint + "30",
   },
-  apiKeyBtnActive: {
-    backgroundColor: Colors.light.tint + "12",
-    borderColor: Colors.light.tint + "40",
-  },
-  apiKeyBtnText: {
+  aiBadgeText: {
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.textTertiary,
-  },
-  apiKeySection: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  apiKeyInput: {
-    flex: 1,
-    height: 42,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: Colors.light.text,
-    backgroundColor: Colors.light.backgroundTertiary,
-  },
-  apiKeySaveBtn: {
-    backgroundColor: Colors.light.accent,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  apiKeySaveBtnText: {
-    color: "#fff",
     fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
+    color: Colors.light.tint,
   },
   inputRow: {
     flexDirection: "row",

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Platform,
   Pressable,
   ScrollView,
@@ -19,7 +18,6 @@ import { searchWordMeaning, WordMeaning } from "@/services/ai";
 import {
   addToSearchHistory,
   clearSearchHistory,
-  getApiKey,
   getSearchHistory,
   SearchHistoryItem,
 } from "@/services/storage";
@@ -100,13 +98,11 @@ export default function SearchScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<WordMeaning | null>(null);
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
-  const [apiKey, setApiKey] = useState("");
   const inputRef = useRef<TextInput>(null);
 
   const loadData = useCallback(async () => {
-    const [h, key] = await Promise.all([getSearchHistory(), getApiKey()]);
+    const h = await getSearchHistory();
     setHistory(h);
-    setApiKey(key);
   }, []);
 
   useEffect(() => {
@@ -122,13 +118,13 @@ export default function SearchScreen() {
     setResult(null);
 
     try {
-      const meaning = await searchWordMeaning(searchWord, apiKey || undefined);
+      const meaning = await searchWordMeaning(searchWord);
       setResult(meaning);
       await addToSearchHistory(searchWord);
       setHistory(await getSearchHistory());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      Alert.alert("エラー", "検索中にエラーが発生しました。");
+      Alert.alert("エラー", "検索中にエラーが発生しました。しばらく後にもう一度お試しください。");
     } finally {
       setIsSearching(false);
     }
@@ -144,7 +140,13 @@ export default function SearchScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
-        <Text style={styles.headerTitle}>意味検索</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>意味検索</Text>
+          <View style={styles.aiBadge}>
+            <Feather name="zap" size={12} color={Colors.light.tint} />
+            <Text style={styles.aiBadgeText}>Gemini AI</Text>
+          </View>
+        </View>
         <Text style={styles.headerSub}>英単語の意味・ニュアンスを日本語で調べる</Text>
         <View style={styles.inputRow}>
           <TextInput
@@ -175,6 +177,9 @@ export default function SearchScreen() {
             )}
           </Pressable>
         </View>
+        {isSearching && (
+          <Text style={styles.searchingText}>Gemini AIが解析中...</Text>
+        )}
       </View>
 
       <ScrollView
@@ -269,7 +274,7 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {/* No result yet, no history */}
+        {/* Empty state */}
         {!result && history.length === 0 && !isSearching && (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
@@ -303,17 +308,38 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   headerTitle: {
     fontSize: 24,
     fontFamily: "Inter_700Bold",
     color: Colors.light.navy,
-    marginBottom: 4,
   },
   headerSub: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textSecondary,
     marginBottom: 14,
+  },
+  aiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.light.tint + "18",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.tint + "30",
+  },
+  aiBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.tint,
   },
   inputRow: {
     flexDirection: "row",
@@ -348,6 +374,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.textTertiary,
     shadowOpacity: 0,
     elevation: 0,
+  },
+  searchingText: {
+    marginTop: 8,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.tint,
   },
   scrollContent: {
     padding: 16,

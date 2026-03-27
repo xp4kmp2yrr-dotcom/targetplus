@@ -49,8 +49,9 @@ A study-support mobile app (Expo + React Native) for Target 1900 English vocabul
 - **Derivative Words tab** — Under development (開発中) screen
 
 **AI Integration:**
-- Perplexity AI API (configured via optional API key stored in AsyncStorage)
-- Falls back to helpful mock responses if no API key is set
+- Gemini 2.5 Flash via Replit AI Integrations proxy (no user API key required)
+- Expo app calls `POST /api/ai/synonyms` and `POST /api/ai/meaning` on the API server
+- API server uses `@workspace/integrations-gemini-ai` to call Gemini
 - Service layer at `artifacts/target-plus/services/ai.ts`
 
 **Storage:**
@@ -65,7 +66,15 @@ A study-support mobile app (Expo + React Native) for Target 1900 English vocabul
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
-Express 5 API server (not used by Target+ directly — all local storage).
+Express 5 API server powering Target+'s AI features.
+
+**AI Routes (`src/routes/ai.ts`):**
+- `POST /api/ai/synonyms` — analyzes a group of English synonyms via Gemini AI
+- `POST /api/ai/meaning` — explains an English word in detail in Japanese via Gemini AI
+
+**Notes:**
+- `@google/genai` is bundled (NOT externalized) in build.mjs — removed `@google/*` from external list
+- Uses `@workspace/integrations-gemini-ai` for Gemini access via Replit's free AI proxy
 
 ## TypeScript & Composite Projects
 

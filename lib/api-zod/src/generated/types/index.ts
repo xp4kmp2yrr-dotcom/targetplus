@@ -6,4 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./synonymAnalysisRequest";
+export * from "./synonymAnalysisResult";
+export * from "./usageExample";
+export * from "./wordMeaningRequest";
+export * from "./wordMeaningResult";
+export * from "./wordNuance";

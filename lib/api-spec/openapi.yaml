@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: ai
+    description: AI analysis operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /ai/synonyms:
+    post:
+      operationId: analyzeSynonyms
+      tags: [ai]
+      summary: Analyze synonym group
+      description: Analyzes a group of words and returns shared meaning, nuances, and memory tips
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SynonymAnalysisRequest"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SynonymAnalysisResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ai/meaning:
+    post:
+      operationId: searchWordMeaning
+      tags: [ai]
+      summary: Search word meaning
+      description: Returns detailed meaning, nuance, and usage tips for an English word in Japanese
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WordMeaningRequest"
+      responses:
+        "200":
+          description: Meaning result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WordMeaningResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +97,89 @@ components:
           type: string
       required:
         - status
-
+    SynonymAnalysisRequest:
+      type: object
+      properties:
+        words:
+          type: array
+          items:
+            type: string
+          minItems: 2
+      required:
+        - words
+    WordNuance:
+      type: object
+      properties:
+        word:
+          type: string
+        nuance:
+          type: string
+      required:
+        - word
+        - nuance
+    UsageExample:
+      type: object
+      properties:
+        word:
+          type: string
+        example:
+          type: string
+      required:
+        - word
+        - example
+    SynonymAnalysisResult:
+      type: object
+      properties:
+        sharedMeaning:
+          type: string
+        nuances:
+          type: array
+          items:
+            $ref: "#/components/schemas/WordNuance"
+        memoryTips:
+          type: string
+        usageExamples:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsageExample"
+      required:
+        - sharedMeaning
+        - nuances
+        - memoryTips
+        - usageExamples
+    WordMeaningRequest:
+      type: object
+      properties:
+        word:
+          type: string
+      required:
+        - word
+    WordMeaningResult:
+      type: object
+      properties:
+        word:
+          type: string
+        meaning:
+          type: string
+        nuance:
+          type: string
+        usageHints:
+          type: string
+        similarWords:
+          type: string
+        memoryTip:
+          type: string
+      required:
+        - word
+        - meaning
+        - nuance
+        - usageHints
+        - similarWords
+        - memoryTip
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

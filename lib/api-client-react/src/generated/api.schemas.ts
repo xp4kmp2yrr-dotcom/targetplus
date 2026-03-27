@@ -8,3 +8,42 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface SynonymAnalysisRequest {
+  /** @minItems 2 */
+  words: string[];
+}
+
+export interface WordNuance {
+  word: string;
+  nuance: string;
+}
+
+export interface UsageExample {
+  word: string;
+  example: string;
+}
+
+export interface SynonymAnalysisResult {
+  sharedMeaning: string;
+  nuances: WordNuance[];
+  memoryTips: string;
+  usageExamples: UsageExample[];
+}
+
+export interface WordMeaningRequest {
+  word: string;
+}
+
+export interface WordMeaningResult {
+  word: string;
+  meaning: string;
+  nuance: string;
+  usageHints: string;
+  similarWords: string;
+  memoryTip: string;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
