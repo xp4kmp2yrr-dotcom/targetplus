@@ -5,6 +5,7 @@ export type SynonymGroup = {
   id: string;
   words: string[];
   analysis: SynonymAnalysis | null;
+  targetMeaning?: string;
   createdAt: number;
 };
 

@@ -21,6 +21,7 @@ import {
   saveSynonymGroup,
   SynonymGroup,
 } from "@/services/storage";
+import ChatSection from "@/components/ChatSection";
 
 function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -31,7 +32,11 @@ const LEVEL_COLOR: Record<string, { bg: string; text: string; border: string }> 
   ふつう: { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
   フォーマル: { bg: "#E8F5E9", text: "#1B5E20", border: "#A5D6A7" },
 };
-const DEFAULT_LEVEL = { bg: Colors.light.backgroundTertiary, text: Colors.light.textSecondary, border: Colors.light.border };
+const DEFAULT_LEVEL = {
+  bg: Colors.light.backgroundTertiary,
+  text: Colors.light.textSecondary,
+  border: Colors.light.border,
+};
 
 type AnalysisCardProps = {
   group: SynonymGroup;
@@ -78,9 +83,17 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
               </View>
             ))}
           </View>
-          <Text style={styles.cardDate}>
-            {new Date(group.createdAt).toLocaleDateString("ja-JP")}
-          </Text>
+          <View style={styles.cardMeta}>
+            <Text style={styles.cardDate}>
+              {new Date(group.createdAt).toLocaleDateString("ja-JP")}
+            </Text>
+            {group.targetMeaning ? (
+              <View style={styles.targetBadge}>
+                <Feather name="book" size={10} color={Colors.light.accent} />
+                <Text style={styles.targetBadgeText}>ターゲット</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         <View style={styles.cardHeaderRight}>
           <Pressable onPress={handleDelete} style={styles.deleteBtn} hitSlop={8}>
@@ -97,6 +110,15 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
       {expanded && analysis && (
         <View style={styles.cardBody}>
           <View style={styles.divider} />
+
+          {/* Target meaning reference */}
+          {group.targetMeaning ? (
+            <View style={styles.targetRefBox}>
+              <Feather name="book-open" size={12} color={Colors.light.accent} />
+              <Text style={styles.targetRefLabel}>ターゲット</Text>
+              <Text style={styles.targetRefText}>{group.targetMeaning}</Text>
+            </View>
+          ) : null}
 
           {/* Shared Image */}
           {analysis.sharedImage ? (
@@ -118,20 +140,32 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
                 {analysis.nuances.map((n, i) => {
                   const lvl = LEVEL_COLOR[n.formalLevel] ?? DEFAULT_LEVEL;
                   return (
-                    <View key={n.word} style={[styles.nuanceRow, i > 0 && styles.nuanceRowBorder]}>
-                      {/* Word + level */}
+                    <View
+                      key={n.word}
+                      style={[styles.nuanceRow, i > 0 && styles.nuanceRowBorder]}
+                    >
                       <View style={styles.nuanceLeft}>
                         <Text style={styles.nuanceWord}>{n.word}</Text>
-                        <View style={[styles.levelBadge, { backgroundColor: lvl.bg, borderColor: lvl.border }]}>
-                          <Text style={[styles.levelText, { color: lvl.text }]}>{n.formalLevel}</Text>
+                        <View
+                          style={[
+                            styles.levelBadge,
+                            { backgroundColor: lvl.bg, borderColor: lvl.border },
+                          ]}
+                        >
+                          <Text style={[styles.levelText, { color: lvl.text }]}>
+                            {n.formalLevel}
+                          </Text>
                         </View>
                       </View>
-                      {/* Point + scene */}
                       <View style={styles.nuanceRight}>
                         <Text style={styles.nuancePoint}>{n.point}</Text>
                         {n.scene ? (
                           <View style={styles.sceneRow}>
-                            <Feather name="map-pin" size={10} color={Colors.light.textTertiary} />
+                            <Feather
+                              name="map-pin"
+                              size={10}
+                              color={Colors.light.textTertiary}
+                            />
                             <Text style={styles.sceneText}>{n.scene}</Text>
                           </View>
                         ) : null}
@@ -165,12 +199,17 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
               </View>
               <View style={styles.examplesBox}>
                 {analysis.usageExamples.map((ex, i) => (
-                  <View key={ex.word} style={[styles.exampleItem, i > 0 && { marginTop: 10 }]}>
+                  <View
+                    key={ex.word}
+                    style={[styles.exampleItem, i > 0 && { marginTop: 10 }]}
+                  >
                     <View style={styles.exampleWordBadge}>
                       <Text style={styles.exampleWordText}>{ex.word}</Text>
                     </View>
                     <Text style={styles.exampleEn}>{ex.example}</Text>
-                    {ex.ja ? <Text style={styles.exampleJa}>{ex.ja}</Text> : null}
+                    {ex.ja ? (
+                      <Text style={styles.exampleJa}>{ex.ja}</Text>
+                    ) : null}
                   </View>
                 ))}
               </View>
@@ -178,6 +217,13 @@ function AnalysisCard({ group, onDelete }: AnalysisCardProps) {
           )}
 
           <View style={{ height: 4 }} />
+
+          {/* Chat */}
+          <ChatSection
+            contextType="synonyms"
+            words={group.words}
+            analysis={analysis}
+          />
         </View>
       )}
     </View>
@@ -192,8 +238,9 @@ export default function SynonymScreen() {
 
   const [groups, setGroups] = useState<SynonymGroup[]>([]);
   const [inputText, setInputText] = useState("");
+  const [targetMeaning, setTargetMeaning] = useState("");
+  const [showTargetInput, setShowTargetInput] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const inputRef = useRef<TextInput>(null);
 
   const loadData = useCallback(async () => {
     const savedGroups = await getSynonymGroups();
@@ -233,11 +280,15 @@ export default function SynonymScreen() {
     setIsAnalyzing(true);
 
     try {
-      const analysis = await analyzeSynonyms(words);
+      const analysis = await analyzeSynonyms(
+        words,
+        targetMeaning.trim() || undefined
+      );
       const newGroup: SynonymGroup = {
         id: generateId(),
         words,
         analysis,
+        targetMeaning: targetMeaning.trim() || undefined,
         createdAt: Date.now(),
       };
       await saveSynonymGroup(newGroup);
@@ -266,9 +317,10 @@ export default function SynonymScreen() {
           </View>
         </View>
         <Text style={styles.headerSub}>英単語をカンマ区切りで入力してAI分析</Text>
+
+        {/* Input row */}
         <View style={styles.inputRow}>
           <TextInput
-            ref={inputRef}
             style={styles.input}
             value={inputText}
             onChangeText={setInputText}
@@ -279,13 +331,27 @@ export default function SynonymScreen() {
             onSubmitEditing={handleAdd}
             returnKeyType="go"
           />
+          {/* Toggle target input */}
+          <Pressable
+            onPress={() => {
+              setShowTargetInput((v) => !v);
+              Haptics.selectionAsync();
+            }}
+            style={[styles.iconBtn, showTargetInput && styles.iconBtnActive]}
+          >
+            <Feather
+              name="book"
+              size={18}
+              color={showTargetInput ? Colors.light.tint : Colors.light.textSecondary}
+            />
+          </Pressable>
           <Pressable
             onPress={handleAdd}
             disabled={isAnalyzing || !inputText.trim()}
             style={({ pressed }) => [
               styles.addBtn,
-              isAnalyzing || !inputText.trim() ? styles.addBtnDisabled : {},
-              pressed ? { opacity: 0.85 } : {},
+              (isAnalyzing || !inputText.trim()) && styles.addBtnDisabled,
+              pressed && { opacity: 0.85 },
             ]}
           >
             {isAnalyzing ? (
@@ -295,6 +361,26 @@ export default function SynonymScreen() {
             )}
           </Pressable>
         </View>
+
+        {/* Target meaning input (collapsible) */}
+        {showTargetInput && (
+          <View style={styles.targetInputWrapper}>
+            <View style={styles.targetInputLabelRow}>
+              <Feather name="book-open" size={12} color={Colors.light.accent} />
+              <Text style={styles.targetInputLabel}>ターゲットの意味（任意）</Text>
+            </View>
+            <TextInput
+              style={styles.targetInput}
+              value={targetMeaning}
+              onChangeText={setTargetMeaning}
+              placeholder="例：big: 大きい / large: 大きな / huge: 巨大な"
+              placeholderTextColor={Colors.light.textTertiary}
+              multiline
+              returnKeyType="done"
+            />
+          </View>
+        )}
+
         {isAnalyzing && (
           <Text style={styles.analyzingText}>AI分析中...</Text>
         )}
@@ -316,7 +402,9 @@ export default function SynonymScreen() {
             <Feather name="list" size={40} color={Colors.light.textTertiary} />
             <Text style={styles.emptyTitle}>単語グループがありません</Text>
             <Text style={styles.emptyDesc}>
-              上の入力欄に2つ以上の英単語を{"\n"}カンマ区切りで入力してください。
+              上の入力欄に2つ以上の英単語を{"\n"}カンマ区切りで入力してください。{"\n\n"}
+              <Text style={styles.emptyDescAccent}>📖 本のアイコン</Text>
+              {"でターゲットの\n意味を追加するとより精度が上がります"}
             </Text>
           </View>
         }
@@ -340,9 +428,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.light.navy },
-  headerSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginBottom: 14 },
+  headerSub: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    marginBottom: 14,
+  },
   aiBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -355,7 +453,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.tint + "30",
   },
   aiBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.light.tint },
-  inputRow: { flexDirection: "row", gap: 10 },
+  inputRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   input: {
     flex: 1,
     height: 50,
@@ -367,6 +465,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.light.text,
     backgroundColor: Colors.light.backgroundTertiary,
+  },
+  iconBtn: {
+    width: 44,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.backgroundTertiary,
+  },
+  iconBtnActive: {
+    borderColor: Colors.light.tint,
+    backgroundColor: Colors.light.tint + "12",
   },
   addBtn: {
     width: 50,
@@ -381,14 +493,71 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  addBtnDisabled: { backgroundColor: Colors.light.textTertiary, shadowOpacity: 0, elevation: 0 },
-  analyzingText: { marginTop: 8, fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.tint },
+  addBtnDisabled: {
+    backgroundColor: Colors.light.textTertiary,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  targetInputWrapper: {
+    marginTop: 10,
+    backgroundColor: Colors.light.accent + "0D",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.accent + "30",
+  },
+  targetInputLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 6,
+  },
+  targetInputLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.accent,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  targetInput: {
+    minHeight: 36,
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: Colors.light.text,
+    paddingVertical: 0,
+  },
+  analyzingText: {
+    marginTop: 8,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.tint,
+  },
 
   list: { padding: 16, gap: 12 },
   listEmpty: { flex: 1 },
-  emptyState: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: Colors.light.textSecondary },
-  emptyDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.textTertiary, textAlign: "center", lineHeight: 20 },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 80,
+    gap: 12,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.textSecondary,
+  },
+  emptyDesc: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textTertiary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  emptyDescAccent: {
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.accent,
+  },
 
   /* Card */
   card: {
@@ -404,16 +573,70 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 4,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16 },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+  },
   cardHeaderLeft: { flex: 1, gap: 6 },
   cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 12 },
   wordsChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  wordChip: { backgroundColor: Colors.light.tint + "18", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  wordChip: {
+    backgroundColor: Colors.light.tint + "18",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   wordChipText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.light.tint },
+  cardMeta: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textTertiary },
+  targetBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: Colors.light.accent + "15",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  targetBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.accent,
+  },
   deleteBtn: { padding: 4 },
-  cardBody: { paddingHorizontal: 14, paddingBottom: 4 },
-  divider: { height: 1, backgroundColor: Colors.light.border, marginBottom: 14 },
+
+  cardBody: { paddingHorizontal: 14, paddingBottom: 0 },
+  divider: { height: 1, backgroundColor: Colors.light.border, marginBottom: 12 },
+
+  /* Target reference */
+  targetRefBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    backgroundColor: Colors.light.accent + "0D",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.accent + "25",
+    flexWrap: "wrap",
+  },
+  targetRefLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.accent,
+    marginRight: 2,
+  },
+  targetRefText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
 
   /* Shared Image */
   sharedImageBox: {
@@ -429,13 +652,24 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sharedImageIcon: { fontSize: 16 },
-  sharedImageLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.light.navy, marginRight: 2 },
+  sharedImageLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.navy,
+    marginRight: 2,
+  },
   sharedImageText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.light.navy },
 
   block: { paddingTop: 0, marginBottom: 14 },
   blockLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
   blockIcon: { fontSize: 14 },
-  blockLabel: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.light.textSecondary, textTransform: "uppercase", letterSpacing: 0.6 },
+  blockLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
 
   /* Nuance Table */
   nuanceTable: {
@@ -463,7 +697,12 @@ const styles = StyleSheet.create({
   },
   levelText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
   nuanceRight: { flex: 1, gap: 4 },
-  nuancePoint: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.text, lineHeight: 19 },
+  nuancePoint: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.text,
+    lineHeight: 19,
+  },
   sceneRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   sceneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textTertiary },
 
@@ -480,7 +719,14 @@ const styles = StyleSheet.create({
   },
   memoryIcon: { fontSize: 20, lineHeight: 24 },
   memoryContent: { flex: 1 },
-  memoryLabel: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#856404", marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 },
+  memoryLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    color: "#856404",
+    marginBottom: 3,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   memoryText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#5D4037", lineHeight: 20 },
 
   /* Examples */
@@ -502,6 +748,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   exampleWordText: { fontSize: 11, fontFamily: "Inter_700Bold", color: Colors.light.accent },
-  exampleEn: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.light.navy, fontStyle: "italic" },
-  exampleJa: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginTop: 2 },
+  exampleEn: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.navy,
+    fontStyle: "italic",
+  },
+  exampleJa: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    marginTop: 2,
+  },
 });

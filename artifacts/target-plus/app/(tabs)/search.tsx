@@ -21,17 +21,12 @@ import {
   getSearchHistory,
   SearchHistoryItem,
 } from "@/services/storage";
-
-const FORMAL_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
-  くだけた: { bg: "#FFF3CD", text: "#856404" },
-  ふつう: { bg: "#D1ECF1", text: "#0C5460" },
-  フォーマル: { bg: "#D4EDDA", text: "#155724" },
-};
+import ChatSection from "@/components/ChatSection";
 
 function MeaningResultCard({ result }: { result: WordMeaning }) {
   return (
     <View style={styles.resultCard}>
-      {/* Word + pos + core image */}
+      {/* Word header */}
       <View style={styles.wordHeader}>
         <View style={styles.wordHeaderLeft}>
           <Text style={styles.wordText}>{result.word}</Text>
@@ -56,11 +51,11 @@ function MeaningResultCard({ result }: { result: WordMeaning }) {
             <Text style={styles.blockIcon}>📖</Text>
             <Text style={styles.blockLabel}>意味</Text>
           </View>
-          <View style={styles.meaningsTable}>
+          <View style={styles.table}>
             {result.meanings.map((m, i) => (
-              <View key={i} style={[styles.meaningRow, i > 0 && styles.meaningRowBorder]}>
-                <View style={styles.meaningPosCell}>
-                  <Text style={styles.meaningPos}>{m.pos}</Text>
+              <View key={i} style={[styles.tableRow, i > 0 && styles.tableRowBorder]}>
+                <View style={styles.posCell}>
+                  <Text style={styles.posTag}>{m.pos}</Text>
                 </View>
                 <Text style={styles.meaningJa}>{m.ja}</Text>
               </View>
@@ -112,9 +107,9 @@ function MeaningResultCard({ result }: { result: WordMeaning }) {
             <Text style={styles.blockIcon}>⚖️</Text>
             <Text style={styles.blockLabel}>類語との違い</Text>
           </View>
-          <View style={styles.vsTable}>
+          <View style={styles.table}>
             {result.vsWords.map((v, i) => (
-              <View key={i} style={[styles.vsRow, i > 0 && styles.vsRowBorder]}>
+              <View key={i} style={[styles.tableRow, i > 0 && styles.tableRowBorder]}>
                 <View style={styles.vsWordCell}>
                   <Text style={styles.vsWord}>{v.word}</Text>
                 </View>
@@ -135,6 +130,13 @@ function MeaningResultCard({ result }: { result: WordMeaning }) {
           </View>
         </View>
       ) : null}
+
+      {/* Chat */}
+      <ChatSection
+        contextType="meaning"
+        word={result.word}
+        analysis={result}
+      />
     </View>
   );
 }
@@ -146,6 +148,8 @@ export default function SearchScreen() {
   const bottomPad = isWeb ? 34 + 84 : insets.bottom + 84;
 
   const [query, setQuery] = useState("");
+  const [targetMeaning, setTargetMeaning] = useState("");
+  const [showTargetInput, setShowTargetInput] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<WordMeaning | null>(null);
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -169,7 +173,10 @@ export default function SearchScreen() {
     setResult(null);
 
     try {
-      const meaning = await searchWordMeaning(searchWord);
+      const meaning = await searchWordMeaning(
+        searchWord,
+        targetMeaning.trim() || undefined
+      );
       setResult(meaning);
       await addToSearchHistory(searchWord);
       setHistory(await getSearchHistory());
@@ -199,6 +206,8 @@ export default function SearchScreen() {
           </View>
         </View>
         <Text style={styles.headerSub}>英単語の意味・ニュアンスを日本語で調べる</Text>
+
+        {/* Main search row */}
         <View style={styles.inputRow}>
           <TextInput
             ref={inputRef}
@@ -212,13 +221,27 @@ export default function SearchScreen() {
             onSubmitEditing={() => handleSearch()}
             returnKeyType="search"
           />
+          {/* Toggle target meaning */}
+          <Pressable
+            onPress={() => {
+              setShowTargetInput((v) => !v);
+              Haptics.selectionAsync();
+            }}
+            style={[styles.iconBtn, showTargetInput && styles.iconBtnActive]}
+          >
+            <Feather
+              name="book"
+              size={18}
+              color={showTargetInput ? Colors.light.tint : Colors.light.textSecondary}
+            />
+          </Pressable>
           <Pressable
             onPress={() => handleSearch()}
             disabled={isSearching || !query.trim()}
             style={({ pressed }) => [
               styles.searchBtn,
-              isSearching || !query.trim() ? styles.searchBtnDisabled : {},
-              pressed ? { opacity: 0.85 } : {},
+              (isSearching || !query.trim()) && styles.searchBtnDisabled,
+              pressed && { opacity: 0.85 },
             ]}
           >
             {isSearching ? (
@@ -228,6 +251,26 @@ export default function SearchScreen() {
             )}
           </Pressable>
         </View>
+
+        {/* Target meaning input (collapsible) */}
+        {showTargetInput && (
+          <View style={styles.targetInputWrapper}>
+            <View style={styles.targetInputLabelRow}>
+              <Feather name="book-open" size={12} color={Colors.light.accent} />
+              <Text style={styles.targetInputLabel}>ターゲットの意味（任意）</Text>
+            </View>
+            <TextInput
+              style={styles.targetInput}
+              value={targetMeaning}
+              onChangeText={setTargetMeaning}
+              placeholder="例：① 巨大な ② 莫大な"
+              placeholderTextColor={Colors.light.textTertiary}
+              multiline
+              returnKeyType="done"
+            />
+          </View>
+        )}
+
         {isSearching && (
           <Text style={styles.searchingText}>AI解析中...</Text>
         )}
@@ -243,7 +286,6 @@ export default function SearchScreen() {
       >
         {result && <MeaningResultCard result={result} />}
 
-        {/* Search History */}
         {!result && history.length > 0 && (
           <View style={styles.historySection}>
             <View style={styles.historySectionHeader}>
@@ -258,7 +300,7 @@ export default function SearchScreen() {
                   key={item.word + item.searchedAt}
                   style={({ pressed }) => [
                     styles.historyChip,
-                    pressed ? { opacity: 0.7 } : {},
+                    pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => {
                     setQuery(item.word);
@@ -280,7 +322,10 @@ export default function SearchScreen() {
             </View>
             <Text style={styles.emptyTitle}>英単語を検索しよう</Text>
             <Text style={styles.emptyDesc}>
-              意味・ニュアンス・使い方・類語との違い{"\n"}覚え方のコツをAIが解説します
+              意味・ニュアンス・使い方・類語との違い{"\n"}
+              覚え方のコツをAIが解説します{"\n\n"}
+              <Text style={styles.emptyDescAccent}>📖 本のアイコン</Text>
+              {"でターゲットの意味を\n追加入力すると、より正確に解析します"}
             </Text>
           </View>
         )}
@@ -309,11 +354,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.navy,
-  },
+  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.light.navy },
   headerSub: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
@@ -331,12 +372,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.tint + "30",
   },
-  aiBadgeText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.light.tint,
-  },
-  inputRow: { flexDirection: "row", gap: 10 },
+  aiBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: Colors.light.tint },
+  inputRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   input: {
     flex: 1,
     height: 50,
@@ -348,6 +385,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.light.text,
     backgroundColor: Colors.light.backgroundTertiary,
+  },
+  iconBtn: {
+    width: 44,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.backgroundTertiary,
+  },
+  iconBtnActive: {
+    borderColor: Colors.light.tint,
+    backgroundColor: Colors.light.tint + "12",
   },
   searchBtn: {
     width: 50,
@@ -363,6 +414,34 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   searchBtnDisabled: { backgroundColor: Colors.light.textTertiary, shadowOpacity: 0, elevation: 0 },
+  targetInputWrapper: {
+    marginTop: 10,
+    backgroundColor: Colors.light.accent + "0D",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.accent + "30",
+  },
+  targetInputLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 6,
+  },
+  targetInputLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.accent,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  targetInput: {
+    minHeight: 36,
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: Colors.light.text,
+    paddingVertical: 0,
+  },
   searchingText: { marginTop: 8, fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.tint },
   scrollContent: { padding: 16 },
 
@@ -421,26 +500,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
 
-  /* Meanings table */
-  meaningsTable: {
+  /* Table */
+  table: {
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.light.border,
     overflow: "hidden",
   },
-  meaningRow: {
+  tableRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 12,
     backgroundColor: Colors.light.backgroundTertiary,
   },
-  meaningRowBorder: { borderTopWidth: 1, borderTopColor: Colors.light.border },
-  meaningPosCell: {
-    width: 90,
-    marginRight: 10,
-  },
-  meaningPos: {
+  tableRowBorder: { borderTopWidth: 1, borderTopColor: Colors.light.border },
+  posCell: { width: 90, marginRight: 10 },
+  posTag: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.tint,
@@ -450,14 +526,12 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignSelf: "flex-start",
   },
-  meaningJa: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    color: Colors.light.text,
-  },
+  meaningJa: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium", color: Colors.light.text },
+  vsWordCell: { width: 90, marginRight: 10 },
+  vsWord: { fontSize: 13, fontFamily: "Inter_700Bold", color: Colors.light.accent },
+  vsDiff: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.text },
 
-  /* Usage Points */
+  /* Points */
   pointsList: { gap: 6 },
   pointRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   pointBullet: { fontSize: 18, color: Colors.light.tint, lineHeight: 22, marginTop: -1 },
@@ -475,30 +549,7 @@ const styles = StyleSheet.create({
   exampleEn: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.light.navy, fontStyle: "italic" },
   exampleJa: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginTop: 2 },
 
-  /* vs Words table */
-  vsTable: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    overflow: "hidden",
-  },
-  vsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.light.backgroundTertiary,
-  },
-  vsRowBorder: { borderTopWidth: 1, borderTopColor: Colors.light.border },
-  vsWordCell: { width: 90, marginRight: 10 },
-  vsWord: {
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
-    color: Colors.light.accent,
-  },
-  vsDiff: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.light.text },
-
-  /* Memory Tip */
+  /* Memory */
   memoryBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -513,12 +564,24 @@ const styles = StyleSheet.create({
   },
   memoryIcon: { fontSize: 22, lineHeight: 26 },
   memoryContent: { flex: 1 },
-  memoryLabel: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#856404", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 },
+  memoryLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: "#856404",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   memoryText: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#5D4037", lineHeight: 21 },
 
   /* History */
   historySection: { marginTop: 8 },
-  historySectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  historySectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   historySectionTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.light.textSecondary },
   clearText: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.tint },
   historyChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -553,5 +616,9 @@ const styles = StyleSheet.create({
     color: Colors.light.textTertiary,
     textAlign: "center",
     lineHeight: 21,
+  },
+  emptyDescAccent: {
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.accent,
   },
 });
