@@ -12,6 +12,8 @@ export type SynonymGroup = {
 export type SearchHistoryItem = {
   word: string;
   searchedAt: number;
+  saved?: boolean;
+  tags?: string[];
 };
 
 const SYNONYM_GROUPS_KEY = "@targetplus_synonym_groups";
@@ -49,10 +51,27 @@ export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
 
 export async function addToSearchHistory(word: string): Promise<void> {
   const history = await getSearchHistory();
-  const filtered = history.filter(
-    (h) => h.word.toLowerCase() !== word.toLowerCase()
+  const existing = history.find((h) => h.word.toLowerCase() === word.toLowerCase());
+  const filtered = history.filter((h) => h.word.toLowerCase() !== word.toLowerCase());
+  // Preserve saved/tags if re-searching a saved word
+  const newItem: SearchHistoryItem = {
+    word,
+    searchedAt: Date.now(),
+    saved: existing?.saved,
+    tags: existing?.tags,
+  };
+  const updated = [newItem, ...filtered].slice(0, 50);
+  await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
+}
+
+export async function updateSearchHistoryItem(
+  word: string,
+  patch: Partial<Pick<SearchHistoryItem, "saved" | "tags">>
+): Promise<void> {
+  const history = await getSearchHistory();
+  const updated = history.map((h) =>
+    h.word.toLowerCase() === word.toLowerCase() ? { ...h, ...patch } : h
   );
-  const updated = [{ word, searchedAt: Date.now() }, ...filtered].slice(0, 20);
   await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
 }
 

@@ -34,6 +34,7 @@ export type WordExample = {
 };
 
 export type WordMeaning = {
+  exists: boolean;
   word: string;
   partOfSpeech: string;
   coreImage: string;
@@ -69,12 +70,13 @@ export async function analyzeSynonyms(
 
 export async function searchWordMeaning(
   word: string,
-  targetMeaning?: string
+  targetMeaning?: string,
+  forceReboot?: boolean
 ): Promise<WordMeaning> {
   const response = await fetch(`${API_BASE}/ai/meaning`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ word, targetMeaning }),
+    body: JSON.stringify({ word, targetMeaning, forceReboot }),
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
