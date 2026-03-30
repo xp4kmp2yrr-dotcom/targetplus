@@ -28,6 +28,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "textformat.abc", selected: "textformat.abc" }} />
         <Label>派生語</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="etymology">
+        <Icon sf={{ default: "book.closed", selected: "book.closed.fill" }} />
+        <Label>語源(Beta)</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -119,6 +123,18 @@ function ClassicTabLayout() {
               <SymbolView name="textformat.abc" tintColor={color} size={24} />
             ) : (
               <MaterialCommunityIcons name="alphabetical" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="etymology"
+        options={{
+          title: "語源検索(Beta)",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="book.closed" tintColor={color} size={24} />
+            ) : (
+              <Feather name="book" size={22} color={color} />
             ),
         }}
       />

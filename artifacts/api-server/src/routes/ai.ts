@@ -143,6 +143,60 @@ ${existenceInstruction}
   }
 });
 
+router.post("/ai/derivative", async (req, res) => {
+  const { term, targetMeaning } = req.body as {
+    term?: unknown;
+    targetMeaning?: string;
+  };
+
+  if (!term || typeof term !== "string" || !term.trim()) {
+    res.status(400).json({ error: "term must be a non-empty string" });
+    return;
+  }
+
+  const trimmedTerm = term.trim().slice(0, 80);
+  const targetSection = targetMeaning?.trim()
+    ? `\n参考：ターゲット1900での意味 → ${targetMeaning.trim()}\n（この意味がある場合は優先して反映すること）`
+    : "";
+
+  const prompt = `中高生向けに、英語の派生語・熟語「${trimmedTerm}」を分析してください。${targetSection}
+
+重要：
+- 長文は避け、短い箇条書き中心で
+- 読みやすさ最優先（言い換え・例は必要最小限）
+- 不明点があれば「推測」と明示し、断定しない
+
+以下のJSON形式のみで回答（コードブロック不要）:
+{
+  "term": "${trimmedTerm}",
+  "meaning": ["意味1（短く）", "意味2（あれば）"],
+  "memoryTip": "覚え方（短く・印象に残る）",
+  "nuance": ["ニュアンス/使い分け1（短く）", "2（あれば）"],
+  "extra": "必要なら補足（短く）"
+}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { maxOutputTokens: 2048, responseMimeType: "application/json" },
+    });
+
+    const text = response.text ?? "{}";
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      res.status(500).json({ error: "Failed to parse AI response" });
+      return;
+    }
+    res.json(parsed);
+  } catch (err) {
+    req.log.error({ err }, "Gemini API error in /ai/derivative");
+    res.status(500).json({ error: "AI analysis failed" });
+  }
+});
+
 router.post("/ai/chat", async (req, res) => {
   const { contextType, word, words, analysis, question, history } = req.body as {
     contextType: "meaning" | "synonyms";

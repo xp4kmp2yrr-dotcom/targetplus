@@ -50,6 +50,14 @@ export type ChatMessage = {
   content: string;
 };
 
+export type DerivativeAnalysis = {
+  term: string;
+  meaning: string[];
+  memoryTip: string;
+  nuance: string[];
+  extra?: string;
+};
+
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 export async function analyzeSynonyms(
@@ -83,6 +91,22 @@ export async function searchWordMeaning(
     throw new Error((err as any).error ?? `HTTP ${response.status}`);
   }
   return response.json() as Promise<WordMeaning>;
+}
+
+export async function analyzeDerivative(params: {
+  term: string;
+  targetMeaning?: string;
+}): Promise<DerivativeAnalysis> {
+  const response = await fetch(`${API_BASE}/ai/derivative`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as any).error ?? `HTTP ${response.status}`);
+  }
+  return response.json() as Promise<DerivativeAnalysis>;
 }
 
 export async function chatWithAI(params: {
