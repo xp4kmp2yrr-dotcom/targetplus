@@ -313,7 +313,7 @@ export default function SynonymScreen() {
           <Text style={styles.headerTitle}>類義語分類</Text>
           <View style={styles.aiBadge}>
             <Feather name="zap" size={12} color={Colors.light.tint} />
-            <Text style={styles.aiBadgeText}>AI</Text>
+            <Text style={styles.aiBadgeText}>AI利用</Text>
           </View>
         </View>
         <Text style={styles.headerSub}>英単語をカンマ区切りで入力してAI分析</Text>
@@ -403,8 +403,8 @@ export default function SynonymScreen() {
             <Text style={styles.emptyTitle}>単語グループがありません</Text>
             <Text style={styles.emptyDesc}>
               上の入力欄に2つ以上の英単語を{"\n"}カンマ区切りで入力してください。{"\n\n"}
-              <Text style={styles.emptyDescAccent}>📖 本のアイコン</Text>
-              {"でターゲットの\n意味を追加するとより精度が上がります"}
+              <Text style={styles.emptyDescAccent}>本のアイコン</Text>
+              {"でターゲットの\n意味を追加することもできます。"}
             </Text>
           </View>
         }

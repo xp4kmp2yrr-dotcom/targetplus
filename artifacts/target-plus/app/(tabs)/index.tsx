@@ -13,22 +13,22 @@ import Colors from "@/constants/colors";
 
 const features = [
   {
-    icon: "list" as const,
+    icon: "git-branch" as const,
     title: "類義語分類",
-    description: "英単語を登録して、AIが語義の違いや使い分けを解説します。",
+    description: "英単語を登録して、AIが語義の違いや使い分けを解説します。英単語の意味は、自身で登録することもできます。",
     color: "#457B9D",
   },
   {
     icon: "search" as const,
     title: "意味検索",
     description: "英単語の詳しい意味・ニュアンス・使い方を日本語で調べられます。",
-    color: "#E63946",
+    color: "#2A9D8F",
   },
   {
-    icon: "book" as const,
-    title: "派生語",
-    description: "派生語機能は現在準備中です。近日公開予定。",
-    color: "#9EB0C8",
+    icon: "share-2" as const,
+    title: "派生語分析",
+    description: "単語に付属する派生語を詳しく分析し、暗記の補助に利用できます。",
+    color: "#9D4EDD",
   },
 ];
 
@@ -61,9 +61,9 @@ export default function HomeScreen() {
               <Text style={styles.logoPlusText}>+</Text>
             </View>
           </View>
-          <Text style={styles.title}>Welcome to Target+</Text>
+          <Text style={styles.title}>Target＋へようこそ</Text>
           <Text style={styles.subtitle}>
-            ターゲットの純正アプリにないちょこっと便利な機能を利用できます。
+            {"英単語帳ターゲットの純正アプリにない\nちょこっと便利な機能を利用できます。\nこのアプリは他の単語帳の補助にも使えます！"}
           </Text>
         </View>
 
@@ -71,11 +71,11 @@ export default function HomeScreen() {
         <View style={styles.badgeRow}>
           <View style={styles.badge}>
             <Feather name="zap" size={12} color={Colors.light.tint} />
-            <Text style={styles.badgeText}>AI Powered</Text>
+            <Text style={styles.badgeText}>複数のAIモデルを使用</Text>
           </View>
           <View style={[styles.badge, styles.badgeOutline]}>
             <Feather name="smartphone" size={12} color={Colors.light.accent} />
-            <Text style={[styles.badgeText, { color: Colors.light.accent }]}>ローカル保存</Text>
+            <Text style={[styles.badgeText, { color: Colors.light.accent }]}>単語データローカル保存</Text>
           </View>
         </View>
 

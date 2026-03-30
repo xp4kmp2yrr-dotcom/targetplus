@@ -134,7 +134,7 @@ export default function ChatSection({ contextType, word, words, analysis }: Prop
           style={styles.input}
           value={input}
           onChangeText={setInput}
-          placeholder="例：hugeとenormousの違いは？"
+          placeholder="例：この単語はどんな文脈で使われる？"
           placeholderTextColor={Colors.light.textTertiary}
           multiline
           returnKeyType="send"

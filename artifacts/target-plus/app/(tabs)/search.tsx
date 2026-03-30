@@ -46,13 +46,13 @@ function TagEditor({ initialTags, onSave, onCancel }: TagEditorProps) {
     <View style={teStyles.container}>
       <View style={teStyles.labelRow}>
         <Feather name="tag" size={13} color={Colors.light.tint} />
-        <Text style={teStyles.label}>タグを入力（カンマ区切り）</Text>
+        <Text style={teStyles.label}>タグを入力</Text>
       </View>
       <TextInput
         style={teStyles.input}
         value={input}
         onChangeText={setInput}
-        placeholder="例：名詞, CEFR-B1, 頻出"
+        placeholder="例：名詞, 頻出"
         placeholderTextColor={Colors.light.textTertiary}
         autoFocus
         returnKeyType="done"
@@ -402,7 +402,7 @@ export default function SearchScreen() {
           <Text style={styles.headerTitle}>意味検索</Text>
           <View style={styles.aiBadge}>
             <Feather name="zap" size={12} color={Colors.light.tint} />
-            <Text style={styles.aiBadgeText}>AI</Text>
+            <Text style={styles.aiBadgeText}>AI利用</Text>
           </View>
         </View>
         <Text style={styles.headerSub}>英単語を1つ入力して日本語で調べる</Text>
@@ -594,8 +594,8 @@ export default function SearchScreen() {
             <Text style={styles.emptyDesc}>
               意味・ニュアンス・使い方・類語との違い{"\n"}
               覚え方のコツをAIが解説します{"\n\n"}
-              <Text style={styles.emptyDescAccent}>📖 本のアイコン</Text>
-              {"でターゲットの意味を追加\n入力するとより正確に解析します"}
+              <Text style={styles.emptyDescAccent}>本のアイコン</Text>
+              {"でターゲットの意味を追加\n入力することもできます。"}
             </Text>
           </View>
         )}
